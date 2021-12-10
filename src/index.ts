@@ -157,13 +157,13 @@ class CheckersBoard {
     // verify a piece does not exist in these coordinates
     place.isSome.assertEquals(false);
 
-    // verify the move is only forwards for a non-king piece
+    // TODO verify the move is only forwards for a non-king piece
 
-    // verify the move is only along the diagonals
+    // TODO verify the move is only along the diagonals
 
-    // verify the move is only along places that are allowed to be moved
+    // TODO verify the move is only along places that are allowed to be moved
 
-    // remove opposite pieces along the way
+    // TODO remove opposite pieces along the way
 
     // remove the piece from x1, y1
     for (let i = 0; i < BOARD_SIZE; i++) {
