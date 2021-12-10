@@ -8,3 +8,6 @@ coverage
 
 # System
 .DS_Store
+
+.idea
+design.adoc
