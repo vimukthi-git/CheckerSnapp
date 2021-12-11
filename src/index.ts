@@ -17,6 +17,7 @@ import {
   Signature,
   isReady,
   Circuit,
+  prop,
 } from 'snarkyjs';
 
 const FIGURE_SIZE = 2;
@@ -24,14 +25,14 @@ const PLAYER_1 = 'W';
 const PLAYER_1_KING = 'ʬ';
 const PLAYER_2 = 'B';
 const PLAYER_2_KING = 'β';
-class Piece extends CircuitValue {
+class Piece {
   player: Bool;
   isKing: Bool;
   x: Field;
   y: Field;
 
   constructor(start: number, bits: Bool[], y: number, x: number) {
-    super();
+    // super();
     this.player = bits[start];
     this.isKing = bits[start + 1];
     this.x = new Field(x);
@@ -63,12 +64,12 @@ class CheckersBoard {
       let row = [];
       for (let j = 0; j < BOARD_SIZE; j++) {
         const isPlayed = bits[figurePtr];
-        row.push(new Optional(isPlayed, new Piece(figurePtr + 1, bits, i, j)));
-        if (isPlayed.toBoolean()) {
-          figurePtr += 1 + FIGURE_SIZE;
-        } else {
-          figurePtr += 1;
-        }
+        let pieceOpt = new Optional(
+          isPlayed,
+          new Piece(figurePtr + 1, bits, i, j)
+        );
+        row.push(pieceOpt);
+        figurePtr += 1 + FIGURE_SIZE;
       }
       board.push(row);
     }
@@ -208,6 +209,11 @@ class CheckersBoard {
         row.push(this.board[i][j].isSome);
         if (this.board[i][j].isSome.toBoolean()) {
           row = row.concat(this.board[i][j].value.serialize());
+        } else {
+          // encoding a dummy value to avoid if-conditions in the deserialization
+          row = row.concat(
+            new Piece(0, [new Bool(false), new Bool(false)], 0, 0).serialize()
+          );
         }
       }
       //console.log(row.length);
@@ -389,14 +395,16 @@ export async function main() {
     const y2 = new Field(2);
 
     const signature = Signature.create(player1, [x1, y1, x2, y2]);
-    await snappInstance.play(
-      player1.toPublicKey(),
-      signature,
-      Field.zero,
-      new Field(1),
-      Field.one,
-      new Field(2)
-    ); //.catch((e) => console.log(e));
+    await snappInstance
+      .play(
+        player1.toPublicKey(),
+        signature,
+        Field.zero,
+        new Field(1),
+        Field.one,
+        new Field(2)
+      )
+      .catch((e) => console.log(e));
   })
     .send()
     .wait();
