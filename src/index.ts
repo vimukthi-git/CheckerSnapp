@@ -148,12 +148,12 @@ class CheckersBoard {
   }
 
   move(x1: Field, y1: Field, x2: Field, y2: Field, player: Bool) {
-    Circuit.asProver(() => {
-      console.log('x1', x1.toString());
-      console.log('y1', y1.toString());
-      console.log('x2', x2.toString());
-      console.log('y2', y2.toString());
-    });
+    // Circuit.asProver(() => {
+    //   console.log('x1', x1.toString());
+    //   console.log('y1', y1.toString());
+    //   console.log('x2', x2.toString());
+    //   console.log('y2', y2.toString());
+    // });
 
     // find the piece given by (x1, y1)
     let piece = new Optional(
@@ -467,23 +467,31 @@ export async function main() {
   b = await Mina.getAccount(snappPubkey);
   new CheckersBoard(b.snapp.appState[0]).printState();
 
-  // // play
-  // console.log('\n\n====== SECOND MOVE ======\n\n');
-  // const two = new Field(2);
-  // await Mina.transaction(player1, async () => {
-  //   const x = Field.one;
-  //   const y = Field.zero;
-  //   const signature = Signature.create(player2, [x, y]);
-  //   await snappInstance
-  //     .play(player2.toPublicKey(), signature, Field.one, Field.zero)
-  //     .catch((e) => console.log(e));
-  // })
-  //   .send()
-  //   .wait();
+  // play
+  console.log('\n\n====== SECOND MOVE ======\n\n');
+  await Mina.transaction(player2, async () => {
+    const x1 = Field.one;
+    const y1 = new Field(5);
+    const x2 = new Field(2);
+    const y2 = new Field(4);
+    const signature = Signature.create(player2, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(
+        player2.toPublicKey(),
+        signature,
+        Field.one,
+        new Field(5),
+        new Field(2),
+        new Field(4)
+      )
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
 
-  // // debug
-  // b = await Mina.getAccount(snappPubkey);
-  // new Board(b.snapp.appState[0]).printState();
+  // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
 
   // // play
   // console.log('\n\n====== THIRD MOVE ======\n\n');
