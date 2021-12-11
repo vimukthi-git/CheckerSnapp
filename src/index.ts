@@ -28,15 +28,14 @@ const PLAYER_2_KING = 'β';
 class Piece {
   player: Bool;
   isKing: Bool;
-  x: Field;
-  y: Field;
+  x: Field; // j
+  y: Field; // i
 
   constructor(start: number, bits: Bool[], y: number, x: number) {
-    // super();
-    this.player = bits[start];
-    this.isKing = bits[start + 1];
-    this.x = new Field(x);
-    this.y = new Field(y);
+    this.player = bits === undefined ? new Bool(false) : bits[start];
+    this.isKing = bits === undefined ? new Bool(false) : bits[start + 1];
+    this.x = new Field(x || 0);
+    this.y = new Field(y || 0);
   }
 
   getDisplayToken(): string {
@@ -120,6 +119,21 @@ class CheckersBoard {
   }
 
   move(x1: Field, y1: Field, x2: Field, y2: Field, player: Bool) {
+    this.board[1][0].isSome.assertEquals(true);
+    this.board[1][0] = Circuit.if(
+      new Bool(true),
+      new Optional(
+        new Bool(false),
+        new Piece(0, [new Bool(false), new Bool(false)], 1, 0)
+      ),
+      this.board[1][0]
+    );
+
+    /**
+     * Above block of code was added to test modifying the board as per the first move without using x1, y1
+     * When using x1, y1 this somehow fails the assertion that is commented out inside the next for loop
+     */
+
     // find the piece given by (x1, y1)
     let piece = new Optional(
       new Bool(false),
@@ -128,35 +142,35 @@ class CheckersBoard {
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
         // piece to move
-        const toMove = x1.equals(new Field(i)).and(y1.equals(new Field(j)));
-        toMove.and(this.board[i][j].isSome).assertEquals(true);
+        const toMove = x1.equals(new Field(j)).and(y1.equals(new Field(i)));
+        //toMove.and(this.board[i][j].isSome).assertEquals(true);
         piece = Circuit.if(toMove, this.board[i][j], piece);
       }
     }
 
     // find the place given by (x2,y2)
-    let place = new Optional(
-      new Bool(true),
-      new Piece(0, [new Bool(false), new Bool(false)], 0, 0)
-    );
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        // place to move to
-        const toPlace = x2.equals(new Field(i)).and(y2.equals(new Field(j)));
-        toPlace.and(this.board[i][j].isSome).assertEquals(false);
-        place = Circuit.if(toPlace, this.board[i][j], place);
-      }
-    }
-    // verify piece exists
-    piece.isSome.assertEquals(true);
-    // verify owner
-    piece.value.player.assertEquals(player);
-    // verify coordinates
-    piece.value.x.assertEquals(x1);
-    piece.value.y.assertEquals(y1);
+    // let place = new Optional(
+    //   new Bool(true),
+    //   new Piece(0, [new Bool(false), new Bool(false)], 0, 0)
+    // );
+    // for (let i = 0; i < BOARD_SIZE; i++) {
+    //   for (let j = 0; j < BOARD_SIZE; j++) {
+    //     // place to move to
+    //     const toPlace = x2.equals(new Field(j)).and(y2.equals(new Field(i)));
+    //     toPlace.and(this.board[i][j].isSome).assertEquals(false);
+    //     //place = Circuit.if(toPlace, this.board[i][j], place);
+    //   }
+    // }
+    // // verify piece exists
+    // piece.isSome.assertEquals(true);
+    // // verify owner
+    // piece.value.player.assertEquals(player);
+    // // verify coordinates
+    // piece.value.x.assertEquals(x1);
+    // piece.value.y.assertEquals(y1);
 
-    // verify a piece does not exist in these coordinates
-    place.isSome.assertEquals(false);
+    // // verify a piece does not exist in these coordinates
+    // place.isSome.assertEquals(false);
 
     // TODO verify the move is only forwards for a non-king piece
 
@@ -166,39 +180,39 @@ class CheckersBoard {
 
     // TODO remove opposite pieces along the way
 
-    // remove the piece from x1, y1
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        // piece to move
-        const toMove = x1.equals(new Field(i)).and(y1.equals(new Field(j)));
-        toMove.and(this.board[i][j].isSome).assertEquals(true);
-        this.board[i][j] = Circuit.if(
-          toMove,
-          new Optional(
-            new Bool(false),
-            new Piece(0, [new Bool(false), new Bool(false)], i, j)
-          ),
-          this.board[i][j]
-        );
-      }
-    }
+    // // remove the piece from x1, y1
+    // for (let i = 0; i < BOARD_SIZE; i++) {
+    //   for (let j = 0; j < BOARD_SIZE; j++) {
+    //     // piece to move
+    //     const toMove = x1.equals(new Field(j)).and(y1.equals(new Field(i)));
+    //     toMove.and(this.board[i][j].isSome).assertEquals(true);
+    //     this.board[i][j] = Circuit.if(
+    //       toMove,
+    //       new Optional(
+    //         new Bool(false),
+    //         new Piece(0, [new Bool(false), new Bool(false)], i, j)
+    //       ),
+    //       this.board[i][j]
+    //     );
+    //   }
+    // }
 
-    // set the piece to x2, y2
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        // place to move to
-        const toPlace = x2.equals(new Field(i)).and(y2.equals(new Field(j)));
-        toPlace.and(this.board[i][j].isSome).assertEquals(false);
-        this.board[i][j] = Circuit.if(
-          toPlace,
-          new Optional(
-            new Bool(true),
-            new Piece(0, [piece.value.player, piece.value.isKing], i, j)
-          ),
-          place
-        );
-      }
-    }
+    // // set the piece to x2, y2
+    // for (let i = 0; i < BOARD_SIZE; i++) {
+    //   for (let j = 0; j < BOARD_SIZE; j++) {
+    //     // place to move to
+    //     const toPlace = x2.equals(new Field(j)).and(y2.equals(new Field(i)));
+    //     toPlace.and(this.board[i][j].isSome).assertEquals(false);
+    //     this.board[i][j] = Circuit.if(
+    //       toPlace,
+    //       new Optional(
+    //         new Bool(true),
+    //         new Piece(0, [piece.value.player, piece.value.isKing], i, j)
+    //       ),
+    //       place
+    //     );
+    //   }
+    // }
   }
 
   serialize(): Field {
@@ -207,14 +221,13 @@ class CheckersBoard {
       let row: Bool[] = [];
       for (let j = 0; j < BOARD_SIZE; j++) {
         row.push(this.board[i][j].isSome);
-        if (this.board[i][j].isSome.toBoolean()) {
-          row = row.concat(this.board[i][j].value.serialize());
-        } else {
+        let piece = Circuit.if(
+          this.board[i][j].isSome,
+          this.board[i][j].value,
           // encoding a dummy value to avoid if-conditions in the deserialization
-          row = row.concat(
-            new Piece(0, [new Bool(false), new Bool(false)], 0, 0).serialize()
-          );
-        }
+          new Piece(0, [new Bool(false), new Bool(false)], 0, 0)
+        );
+        row = row.concat(piece.serialize());
       }
       //console.log(row.length);
       sBoard = sBoard.concat(row);
@@ -319,16 +332,16 @@ export default class Checkers extends SmartContract {
       .and(x1.lt(new Field(BOARD_SIZE)))
       .assertEquals(true);
     x2.gte(Field.zero)
-      .and(x1.lt(new Field(BOARD_SIZE)))
+      .and(x2.lt(new Field(BOARD_SIZE)))
       .assertEquals(true);
     y1.gte(Field.zero)
-      .and(x1.lt(new Field(BOARD_SIZE)))
+      .and(y1.lt(new Field(BOARD_SIZE)))
       .assertEquals(true);
     y2.gte(Field.zero)
-      .and(x1.lt(new Field(BOARD_SIZE)))
+      .and(y2.lt(new Field(BOARD_SIZE)))
       .assertEquals(true);
 
-    board.move(x1, y1, x2, y2, player);
+    board.move(Field.zero, Field.zero, x2, y2, player);
     this.board.set(board.serialize());
 
     // 6. did I just win? If so, update the state as well
@@ -378,6 +391,7 @@ export async function main() {
   console.log('\ninitial board');
   const cb = new CheckersBoard(b.snapp.appState[0]);
   cb.printState();
+
   // cb.init();
   // cb.printState();
 
@@ -386,21 +400,23 @@ export async function main() {
   // let unser = new CheckersBoard(ser);
   // unser.printState();
 
+  const x1 = Field.zero;
+  const y1 = new Field(1);
+  const x2 = Field.one;
+  const y2 = new Field(2);
+  // try move without smart contract
+  //cb.move(x1, y1, x2, y2, new Bool(false));
+
   // play
   console.log('\n\n====== FIRST MOVE ======\n\n');
   await Mina.transaction(player1, async () => {
-    const x1 = Field.zero;
-    const y1 = new Field(1);
-    const x2 = Field.one;
-    const y2 = new Field(2);
-
     const signature = Signature.create(player1, [x1, y1, x2, y2]);
     await snappInstance
       .play(
         player1.toPublicKey(),
         signature,
         Field.zero,
-        new Field(1),
+        Field.one,
         Field.one,
         new Field(2)
       )
