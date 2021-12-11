@@ -201,7 +201,7 @@ class CheckersBoard {
     // verify piece exists
     piece.isSome.assertEquals(true);
     // verify owner
-    //piece.value.player.assertEquals(player);
+    piece.value.player.assertEquals(player);
     // verify coordinates
     piece.value.x.assertEquals(x1);
     piece.value.y.assertEquals(y1);
