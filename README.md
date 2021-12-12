@@ -1,4 +1,4 @@
-# Mina Snapp: Checkers
+# Mina CheckerSnapp
 
 A Checkers game built to demonstrate Mina Snapps Smart Contracts at work.
 
@@ -39,23 +39,225 @@ Sample console log
 | _ | W | _ | W | _ | W | _ | W |
 ```
 
-## How to build
+## How it works
 
-```sh
-npm run build
+Differences from the tictactoe game
+
+- There is initial board setup where pieces are pre-arranged.
+- Move requires two sets of coordinates.
+- Board is larger with more logic.
+
+Summary of the internals,
+
+1. The smart contract interface looks like the following
+
+```
+class Checkers extends SmartContract {
+  // The board is serialized as a single field element
+  @state(Field) board: State<Field>;
+  // false -> player 1 | true -> player 2
+  @state(Bool) nextPlayer: State<Bool>;
+  // defaults to false, set to true when a player wins
+  @state(Bool) gameDone: State<Bool>;
+
+  // initialization
+  constructor(
+    initialBalance: UInt64,
+    address: PublicKey,
+    player1: PublicKey,
+    player2: PublicKey
+  ) {
+    // ...
+  }
+
+  @method async play(
+    pubkey: PublicKey,
+    signature: Signature,
+    // Coordinates of the piece that the player wants to move
+    x1: Field,
+    y1: Field,
+    // Coordinates of the place that the player wants to move the piece to.
+    x2: Field,
+    y2: Field
+  ) {
+    // ....
+  }
+}
+
 ```
 
-## How to run tests
+2. Game is serialized in to `board` state variable by encoding each of the pieces(`Piece` data structure) of the game into a single bit array. An `Optional` value is prefixed to each piece to indicate whether the position in the board is empty or not.
 
-```sh
-npm run test
-npm run testw # watch mode
+```
+board = Optional<Piece>[]
+
+// piece
+class Piece extends CircuitValue {
+  @prop player: Bool;
+  @prop isKing: Bool;
+  @prop x: Field; // j
+  @prop y: Field; // i
+
+  // ..
+}
 ```
 
-## How to run coverage
+3. Play method takes in the players public key, a signature of the paramters and two sets of coordinates, coordinates of the piece that the player wants to move as well as the coordinates of the place that the player wants to move the piece to. Following is an example call to the method. Any integration to a frontend would use this method to play the game.
 
-```sh
-npm run coverage
+```
+ await Mina.transaction(player1, async () => {
+    const x1 = Field.zero;
+    const y1 = new Field(2);
+    const x2 = Field.one;
+    const y2 = new Field(3);
+    const signature = Signature.create(player1, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player1.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
+```
+
+4. Class `CheckersBoard` contains the main game logic. It verifies the move is valid as well as other performing logic like
+
+```
+1. Finding the piece to play
+2. Correct player
+3. The place to move to is empty
+4. Move is forward for non-king pieces
+5. Move is diagonal
+6. Correct number of places travelled
+7. Complete the move.
+8. Remove opposite pieces along the way (Makes the game slow as of now).
+9. Marking a piece as King if eligible.
+```
+
+5. Example round of play from the console logs
+
+```
+initial board
+| B | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| B | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== FIRST MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| _ | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | _ | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== SECOND MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| _ | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | _ | _ | _ | _ | _ |
+| _ | _ | W | _ | _ | _ | _ | _ |
+| _ | _ | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== THIRD MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| _ | _ | _ | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | _ | _ | _ |
+| _ | _ | W | _ | _ | _ | _ | _ |
+| _ | _ | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== FOURTH MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| W | _ | _ | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | _ | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== FIFTH MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | B | _ | B |
+| W | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | _ | _ | W | _ | W | _ | W |
+| W | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== SIXTH MOVE ======
+
+| B | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | B | _ | B |
+| W | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| _ | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== SEVENTH MOVE ======
+
+| B | _ | _ | _ | B | _ | B | _ |
+| _ | B | _ | B | _ | B | _ | B |
+| W | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| _ | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
+
+
+
+====== EIGTH MOVE ======
+
+| B | _ | ʬ | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | B | _ | B |
+| _ | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| _ | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+---
 ```
 
 ## License
