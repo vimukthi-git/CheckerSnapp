@@ -241,34 +241,50 @@ class CheckersBoard {
      * This block slows things down a looooot...
      */
     // Remove maximum of 1 opposite pieces along the way, while also verifying there are no own pieces along the way
-    // let numPiecesRemoved = Field.zero;
-    // for (let i = 0; i < BOARD_SIZE; i++) {
-    //   for (let j = 0; j < BOARD_SIZE; j++) {
-    //     const betweenXCoordinates =
-    //       (xDiff.gt(Field.zero).and(x1.lt(new Field(j))).and(x2.gt(new Field(j))))
-    //         .or(xDiff.lt(Field.zero).and(x1.gt(new Field(j))).and(x2.lt(new Field(j))));
-    //     const betweenYCoordinates =
-    //       (yDiff.gt(Field.zero).and(y1.lt(new Field(i))).and(y2.gt(new Field(i))))
-    //         .or(yDiff.lt(Field.zero).and(y1.gt(new Field(i))).and(y2.lt(new Field(i))));
-    //     const toRemove = this.board[i][j].isSome
-    //       // opposite player's piece
-    //       .and(this.board[i][j].value.player.equals(player).not())
-    //       .and(numPiecesRemoved.equals(Field.zero))
-    //       .and(betweenXCoordinates)
-    //       .and(betweenYCoordinates);
-    //     numPiecesRemoved = Circuit.if(
-    //       toRemove,
-    //       numPiecesRemoved.add(Field.one), numPiecesRemoved);
-    //     this.board[i][j] = Circuit.if(
-    //       toRemove,
-    //       new Optional(
-    //         new Bool(false),
-    //         new Piece(0, [new Bool(false), new Bool(false)], i, j)
-    //       ),
-    //       this.board[i][j]
-    //     );
-    //   }
-    // }
+    let numPiecesRemoved = Field.zero;
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        const betweenXCoordinates = xDiff
+          .gt(Field.zero)
+          .and(x1.lt(new Field(j)))
+          .and(x2.gt(new Field(j)))
+          .or(
+            xDiff
+              .lt(Field.zero)
+              .and(x1.gt(new Field(j)))
+              .and(x2.lt(new Field(j)))
+          );
+        const betweenYCoordinates = yDiff
+          .gt(Field.zero)
+          .and(y1.lt(new Field(i)))
+          .and(y2.gt(new Field(i)))
+          .or(
+            yDiff
+              .lt(Field.zero)
+              .and(y1.gt(new Field(i)))
+              .and(y2.lt(new Field(i)))
+          );
+        const toRemove = this.board[i][j].isSome
+          // opposite player's piece
+          .and(this.board[i][j].value.player.equals(player).not())
+          .and(numPiecesRemoved.equals(Field.zero))
+          .and(betweenXCoordinates)
+          .and(betweenYCoordinates);
+        numPiecesRemoved = Circuit.if(
+          toRemove,
+          numPiecesRemoved.add(Field.one),
+          numPiecesRemoved
+        );
+        this.board[i][j] = Circuit.if(
+          toRemove,
+          new Optional(
+            new Bool(false),
+            new Piece(0, [new Bool(false), new Bool(false)], i, j)
+          ),
+          this.board[i][j]
+        );
+      }
+    }
 
     // remove the piece from x1, y1 and set it to x2, y2
     for (let i = 0; i < BOARD_SIZE; i++) {
