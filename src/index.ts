@@ -20,6 +20,10 @@ import {
   prop,
 } from 'snarkyjs';
 
+function abs(value: Field): Field {
+  return Circuit.if(value.lt(Field.zero), value.mul(new Field(-1)), value);
+}
+
 const FIGURE_SIZE = 2;
 const PLAYER_1 = 'W';
 const PLAYER_1_KING = 'ʬ';
@@ -160,24 +164,6 @@ class CheckersBoard {
       new Bool(false),
       new Piece(0, [new Bool(false), new Bool(false)], 0, 0)
     );
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        // Circuit.asProver(() => {
-        //   console.log("i", i);
-        //   console.log("j", j);
-        //  console.log(this.board[i][j].isSome.toString());
-        // });
-
-        // piece to move
-        const toMove = x1
-          .equals(new Field(j))
-          .and(y1.equals(new Field(i)))
-          .and(this.board[i][j].isSome);
-        //this.board[i][j].isSome.assertEquals(true);
-        piece = Circuit.if(toMove, this.board[i][j], piece);
-      }
-    }
-
     // find the place given by (x2,y2)
     let place = new Optional(
       new Bool(true),
@@ -185,6 +171,13 @@ class CheckersBoard {
     );
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
+        // piece to move
+        const toMove = x1
+          .equals(new Field(j))
+          .and(y1.equals(new Field(i)))
+          .and(this.board[i][j].isSome);
+        piece = Circuit.if(toMove, this.board[i][j], piece);
+
         // place to move to
         const toPlace = x2
           .equals(new Field(j))
@@ -194,30 +187,90 @@ class CheckersBoard {
       }
     }
 
-    // Circuit.asProver(() => {
-    //   console.log("place to move", place.value.getDisplayToken(), place.isSome.toString());
-    // });
-
     // verify piece exists
     piece.isSome.assertEquals(true);
+    console.log('1. Found piece');
+
     // verify owner
     piece.value.player.assertEquals(player);
+    console.log('2. Correct player');
+
     // verify coordinates
     piece.value.x.assertEquals(x1);
     piece.value.y.assertEquals(y1);
+    console.log('3. Piece has right coordinates');
 
     // verify a piece does not exist in these coordinates
     place.isSome.assertEquals(false);
+    console.log('4. The place is empty');
 
-    // TODO verify the move is only forwards for a non-king piece
+    // verify the move is only forwards for a non-king piece
+    piece.value.player
+      .not()
+      .and(y1.lt(y2))
+      .or(piece.value.player.and(y1.gt(y2)))
+      .and(piece.value.isKing.not())
+      .assertEquals(true);
+    console.log('5. Move is forward');
 
-    // TODO verify the move is only along the diagonals
+    // verify the move is only along the diagonals
+    x1.equals(x2).not().and(y1.equals(y2).not()).assertEquals(true);
+    console.log('6. Move is diagonal');
 
-    // TODO verify the move is only along places that are allowed to be moved
+    // verify the move is only along places that are allowed to be moved for a non-king piece
+    let xDiff = x1.sub(x2);
+    let xDiffAbs = abs(xDiff);
+    let yDiff = y1.sub(y2);
+    let yDiffAbs = abs(yDiff);
+    const singlePlaceMove = xDiffAbs
+      .equals(Field.one)
+      .and(yDiffAbs.equals(Field.one));
+    // going over a single opposite piece, diff = 2. Need to have a different contract method that
+    // calls this method multiple times to take multiple opposite pieces.
+    const doublePlaceMove = xDiffAbs
+      .equals(new Field(2))
+      .and(yDiffAbs.equals(new Field(2)));
+    // For king more verification is necessary to prevent jumping over consective diagonal items.
+    piece.value.isKing
+      .not()
+      .and(singlePlaceMove.or(doublePlaceMove))
+      .assertEquals(true);
+    console.log('7. Correct number of places travelled');
 
-    // TODO remove opposite pieces along the way
+    /**
+     * This block slows things down a looooot...
+     */
+    // Remove maximum of 1 opposite pieces along the way, while also verifying there are no own pieces along the way
+    // let numPiecesRemoved = Field.zero;
+    // for (let i = 0; i < BOARD_SIZE; i++) {
+    //   for (let j = 0; j < BOARD_SIZE; j++) {
+    //     const betweenXCoordinates =
+    //       (xDiff.gt(Field.zero).and(x1.lt(new Field(j))).and(x2.gt(new Field(j))))
+    //         .or(xDiff.lt(Field.zero).and(x1.gt(new Field(j))).and(x2.lt(new Field(j))));
+    //     const betweenYCoordinates =
+    //       (yDiff.gt(Field.zero).and(y1.lt(new Field(i))).and(y2.gt(new Field(i))))
+    //         .or(yDiff.lt(Field.zero).and(y1.gt(new Field(i))).and(y2.lt(new Field(i))));
+    //     const toRemove = this.board[i][j].isSome
+    //       // opposite player's piece
+    //       .and(this.board[i][j].value.player.equals(player).not())
+    //       .and(numPiecesRemoved.equals(Field.zero))
+    //       .and(betweenXCoordinates)
+    //       .and(betweenYCoordinates);
+    //     numPiecesRemoved = Circuit.if(
+    //       toRemove,
+    //       numPiecesRemoved.add(Field.one), numPiecesRemoved);
+    //     this.board[i][j] = Circuit.if(
+    //       toRemove,
+    //       new Optional(
+    //         new Bool(false),
+    //         new Piece(0, [new Bool(false), new Bool(false)], i, j)
+    //       ),
+    //       this.board[i][j]
+    //     );
+    //   }
+    // }
 
-    // remove the piece from x1, y1
+    // remove the piece from x1, y1 and set it to x2, y2
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
         // piece to move
@@ -233,12 +286,6 @@ class CheckersBoard {
           ),
           this.board[i][j]
         );
-      }
-    }
-
-    // set the piece to x2, y2
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
         // place to move to
         const toPlace = x2
           .equals(new Field(j))
@@ -289,6 +336,28 @@ class CheckersBoard {
       console.log(row);
     }
     console.log('---\n');
+  }
+
+  isWon(): Bool {
+    let player1Pieces = new Field(0);
+    let player2Pieces = new Field(0);
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        const pieceExists = this.board[i][j].isSome;
+        player1Pieces = Circuit.if(
+          pieceExists.and(this.board[i][j].value.player.not()),
+          player1Pieces.add(new Field(1)),
+          player1Pieces
+        );
+        player2Pieces = Circuit.if(
+          pieceExists.and(this.board[i][j].value.player),
+          player2Pieces.add(new Field(1)),
+          player2Pieces
+        );
+      }
+    }
+    // Simple win condition, one player has been wiped out of the board
+    return player1Pieces.isZero().or(player2Pieces.isZero());
   }
 }
 
@@ -386,8 +455,8 @@ export default class Checkers extends SmartContract {
     this.board.set(board.serialize());
 
     // 6. did I just win? If so, update the state as well
-    //const won = board.checkWinner();
-    //this.gameDone.set(won);
+    const won = board.isWon();
+    this.gameDone.set(won);
   }
 }
 
@@ -450,14 +519,7 @@ export async function main() {
     const y2 = new Field(3);
     const signature = Signature.create(player1, [x1, y1, x2, y2]);
     await snappInstance
-      .play(
-        player1.toPublicKey(),
-        signature,
-        Field.zero,
-        new Field(2),
-        Field.one,
-        new Field(3)
-      )
+      .play(player1.toPublicKey(), signature, x1, y1, x2, y2)
       .catch((e) => console.log(e));
   })
     .send()
@@ -476,14 +538,7 @@ export async function main() {
     const y2 = new Field(4);
     const signature = Signature.create(player2, [x1, y1, x2, y2]);
     await snappInstance
-      .play(
-        player2.toPublicKey(),
-        signature,
-        Field.one,
-        new Field(5),
-        new Field(2),
-        new Field(4)
-      )
+      .play(player2.toPublicKey(), signature, x1, y1, x2, y2)
       .catch((e) => console.log(e));
   })
     .send()
@@ -493,39 +548,43 @@ export async function main() {
   b = await Mina.getAccount(snappPubkey);
   new CheckersBoard(b.snapp.appState[0]).printState();
 
-  // // play
-  // console.log('\n\n====== THIRD MOVE ======\n\n');
-  // await Mina.transaction(player1, async () => {
-  //   const x = Field.one;
-  //   const y = Field.one;
-  //   const signature = Signature.create(player1, [x, y]);
-  //   await snappInstance
-  //     .play(player1.toPublicKey(), signature, Field.one, Field.one)
-  //     .catch((e) => console.log(e));
-  // })
-  //   .send()
-  //   .wait();
+  // play
+  console.log('\n\n====== THIRD MOVE ======\n\n');
+  await Mina.transaction(player1, async () => {
+    const x1 = new Field(2);
+    const y1 = new Field(2);
+    const x2 = new Field(3);
+    const y2 = new Field(3);
+    const signature = Signature.create(player1, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player1.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
 
-  // // debug
-  // b = await Mina.getAccount(snappPubkey);
-  // new Board(b.snapp.appState[0]).printState();
+  // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
 
-  // // play
-  // console.log('\n\n====== FOURTH MOVE ======\n\n');
-  // await Mina.transaction(player2, async () => {
-  //   const x = two;
-  //   const y = Field.one;
-  //   const signature = Signature.create(player2, [x, y]);
-  //   await snappInstance
-  //     .play(player2.toPublicKey(), signature, two, Field.one)
-  //     .catch((e) => console.log(e));
-  // })
-  //   .send()
-  //   .wait();
+  // play
+  console.log('\n\n====== FOURTH MOVE ======\n\n');
+  await Mina.transaction(player2, async () => {
+    const x1 = new Field(2);
+    const y1 = new Field(4);
+    const x2 = new Field(0);
+    const y2 = new Field(2);
+    const signature = Signature.create(player2, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player2.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
 
-  // // debug
-  // b = await Mina.getAccount(snappPubkey);
-  // new Board(b.snapp.appState[0]).printState();
+  // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
 
   // // play
   // console.log('\n\n====== FIFTH MOVE ======\n\n');
@@ -541,9 +600,9 @@ export async function main() {
   //   .wait();
 
   // // debug
-  // b = await Mina.getAccount(snappPubkey);
-  // new Board(b.snapp.appState[0]).printState();
-  // console.log('did someone win?', b.snapp.appState[2].toString());
+  b = await Mina.getAccount(snappPubkey);
+  //new CheckersBoard(b.snapp.appState[0]).printState();
+  console.log('did someone win?', b.snapp.appState[2].toString());
 
   // cleanup
   shutdown();
