@@ -26,6 +26,19 @@ PLAYER_2 = 'B'; // black player piece
 PLAYER_2_KING = 'β'; // black player king
 ```
 
+Sample console log
+
+```
+| B | _ | ʬ | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | B | _ | B |
+| _ | _ | B | _ | B | _ | B | _ |
+| _ | _ | _ | B | _ | _ | _ | _ |
+| _ | _ | _ | _ | _ | _ | _ | _ |
+| _ | W | _ | W | _ | W | _ | W |
+| _ | _ | W | _ | W | _ | W | _ |
+| _ | W | _ | W | _ | W | _ | W |
+```
+
 ## How to build
 
 ```sh
