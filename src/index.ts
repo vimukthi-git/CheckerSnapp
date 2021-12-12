@@ -237,39 +237,32 @@ class CheckersBoard {
       .assertEquals(true);
     console.log('7. Correct number of places travelled');
 
-    /**
-     * This block slows things down a looooot...
-     */
     // Remove maximum of 1 opposite pieces along the way, while also verifying there are no own pieces along the way
     let numPiecesRemoved = Field.zero;
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
-        const betweenXCoordinates = xDiff
-          .gt(Field.zero)
-          .and(x1.lt(new Field(j)))
-          .and(x2.gt(new Field(j)))
-          .or(
-            xDiff
-              .lt(Field.zero)
-              .and(x1.gt(new Field(j)))
-              .and(x2.lt(new Field(j)))
-          );
-        const betweenYCoordinates = yDiff
-          .gt(Field.zero)
-          .and(y1.lt(new Field(i)))
-          .and(y2.gt(new Field(i)))
-          .or(
-            yDiff
-              .lt(Field.zero)
-              .and(y1.gt(new Field(i)))
-              .and(y2.lt(new Field(i)))
-          );
+        /**
+         * This block slows things down a looooot... :(
+         */
+        const x = new Field(j);
+        const y = new Field(i);
+        const betweenXCoordinates1 = x
+          .lt(x2)
+          .and(x.gt(x1))
+          .or(x.gt(x2).and(x.lt(x1)));
+        const betweenYCoordinates1 = y
+          .lt(y2)
+          .and(y.gt(y1))
+          .or(y.gt(y2).and(y.lt(y1)));
+        /**
+         * End slow block
+         */
         const toRemove = this.board[i][j].isSome
           // opposite player's piece
           .and(this.board[i][j].value.player.equals(player).not())
           .and(numPiecesRemoved.equals(Field.zero))
-          .and(betweenXCoordinates)
-          .and(betweenYCoordinates);
+          .and(betweenXCoordinates1)
+          .and(betweenYCoordinates1);
         numPiecesRemoved = Circuit.if(
           toRemove,
           numPiecesRemoved.add(Field.one),
@@ -307,6 +300,7 @@ class CheckersBoard {
           .equals(new Field(j))
           .and(y2.equals(new Field(i)))
           .and(this.board[i][j].isSome.not());
+        //const isKing = Circuit.if(player.not())
         this.board[i][j] = Circuit.if(
           toPlace,
           new Optional(
@@ -315,6 +309,7 @@ class CheckersBoard {
           ),
           this.board[i][j]
         );
+        // TODO set king if at the opposite edge of the board
       }
     }
   }
