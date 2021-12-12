@@ -237,15 +237,52 @@ class CheckersBoard {
       .assertEquals(true);
     console.log('7. Correct number of places travelled');
 
-    // Remove maximum of 1 opposite pieces along the way, while also verifying there are no own pieces along the way
+    // set king if eligible
+    piece.value.isKing = player
+      .not()
+      .and(y2.equals(new Field(BOARD_SIZE - 1)))
+      .or(player.and(y2.equals(Field.zero)));
+
     let numPiecesRemoved = Field.zero;
+    // remove the piece from x1, y1 and set it to x2, y2
+    // Remove maximum of 1 opposite pieces along the way,
+    // TODO while also verifying there are no own pieces along the way
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
+        const x = new Field(j);
+        const y = new Field(i);
+        // piece to move
+        const toMove = x1
+          .equals(x)
+          .and(y1.equals(y))
+          .and(this.board[i][j].isSome);
+        this.board[i][j] = Circuit.if(
+          toMove,
+          new Optional(
+            new Bool(false),
+            new Piece(0, [new Bool(false), new Bool(false)], i, j)
+          ),
+          this.board[i][j]
+        );
+        // place to move to
+        const toPlace = x2
+          .equals(x)
+          .and(y2.equals(y))
+          .and(this.board[i][j].isSome.not());
+        this.board[i][j] = Circuit.if(
+          toPlace,
+          new Optional(
+            new Bool(true),
+            new Piece(0, [piece.value.player, piece.value.isKing], i, j)
+          ),
+          this.board[i][j]
+        );
+
+        // Remove maximum of 1 opposite pieces along the way,
+        // TODO while also verifying there are no own pieces along the way
         /**
          * This block slows things down a looooot... :(
          */
-        const x = new Field(j);
-        const y = new Field(i);
         const betweenXCoordinates1 = x
           .lt(x2)
           .and(x.gt(x1))
@@ -276,40 +313,6 @@ class CheckersBoard {
           ),
           this.board[i][j]
         );
-      }
-    }
-
-    // remove the piece from x1, y1 and set it to x2, y2
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        // piece to move
-        const toMove = x1
-          .equals(new Field(j))
-          .and(y1.equals(new Field(i)))
-          .and(this.board[i][j].isSome);
-        this.board[i][j] = Circuit.if(
-          toMove,
-          new Optional(
-            new Bool(false),
-            new Piece(0, [new Bool(false), new Bool(false)], i, j)
-          ),
-          this.board[i][j]
-        );
-        // place to move to
-        const toPlace = x2
-          .equals(new Field(j))
-          .and(y2.equals(new Field(i)))
-          .and(this.board[i][j].isSome.not());
-        //const isKing = Circuit.if(player.not())
-        this.board[i][j] = Circuit.if(
-          toPlace,
-          new Optional(
-            new Bool(true),
-            new Piece(0, [piece.value.player, piece.value.isKing], i, j)
-          ),
-          this.board[i][j]
-        );
-        // TODO set king if at the opposite edge of the board
       }
     }
   }
