@@ -585,22 +585,80 @@ export async function main() {
   b = await Mina.getAccount(snappPubkey);
   new CheckersBoard(b.snapp.appState[0]).printState();
 
-  // // play
-  // console.log('\n\n====== FIFTH MOVE ======\n\n');
-  // await Mina.transaction(player1, async () => {
-  //   const x = two;
-  //   const y = two;
-  //   const signature = Signature.create(player1, [x, y]);
-  //   await snappInstance
-  //     .play(player1.toPublicKey(), signature, two, two)
-  //     .catch((e) => console.log(e));
-  // })
-  //   .send()
-  //   .wait();
+  // play
+  console.log('\n\n====== FIFTH MOVE ======\n\n');
+  await Mina.transaction(player1, async () => {
+    const x1 = new Field(1);
+    const y1 = new Field(1);
+    const x2 = new Field(2);
+    const y2 = new Field(2);
+    const signature = Signature.create(player1, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player1.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
+  // // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
+
+  // play
+  console.log('\n\n====== SIXTH MOVE ======\n\n');
+  await Mina.transaction(player2, async () => {
+    const x1 = new Field(0);
+    const y1 = new Field(6);
+    const x2 = new Field(1);
+    const y2 = new Field(5);
+    const signature = Signature.create(player2, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player2.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
 
   // // debug
   b = await Mina.getAccount(snappPubkey);
-  //new CheckersBoard(b.snapp.appState[0]).printState();
+  new CheckersBoard(b.snapp.appState[0]).printState();
+
+  // play
+  console.log('\n\n====== SEVENTH MOVE ======\n\n');
+  await Mina.transaction(player1, async () => {
+    const x1 = new Field(2);
+    const y1 = new Field(0);
+    const x2 = new Field(1);
+    const y2 = new Field(1);
+    const signature = Signature.create(player1, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player1.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
+  // // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
+
+  // play. player 1 KING
+  console.log('\n\n====== EIGTH MOVE ======\n\n');
+  await Mina.transaction(player2, async () => {
+    const x1 = new Field(0);
+    const y1 = new Field(2);
+    const x2 = new Field(2);
+    const y2 = new Field(0);
+    const signature = Signature.create(player2, [x1, y1, x2, y2]);
+    await snappInstance
+      .play(player2.toPublicKey(), signature, x1, y1, x2, y2)
+      .catch((e) => console.log(e));
+  })
+    .send()
+    .wait();
+
+  // // debug
+  b = await Mina.getAccount(snappPubkey);
+  new CheckersBoard(b.snapp.appState[0]).printState();
+
   console.log('did someone win?', b.snapp.appState[2].toString());
 
   // cleanup
