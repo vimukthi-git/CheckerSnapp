@@ -152,13 +152,6 @@ class CheckersBoard {
   }
 
   move(x1: Field, y1: Field, x2: Field, y2: Field, player: Bool) {
-    // Circuit.asProver(() => {
-    //   console.log('x1', x1.toString());
-    //   console.log('y1', y1.toString());
-    //   console.log('x2', x2.toString());
-    //   console.log('y2', y2.toString());
-    // });
-
     // find the piece given by (x1, y1)
     let piece = new Optional(
       new Bool(false),
@@ -515,14 +508,6 @@ export async function main() {
   console.log('\ninitial board');
   const cb = new CheckersBoard(b.snapp.appState[0]);
   cb.printState();
-
-  // cb.init();
-  // cb.printState();
-
-  // let ser = cb.serialize();
-  // console.log(ser);
-  // let unser = new CheckersBoard(ser);
-  // unser.printState();
 
   // play
   console.log('\n\n====== FIRST MOVE ======\n\n');
