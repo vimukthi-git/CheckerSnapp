@@ -147,9 +147,7 @@ initial board
 | _ | W | _ | W | _ | W | _ | W |
 ---
 
-
-
-====== FIRST MOVE ======
+====== PLAYER1 FIRST MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | B | _ | B | _ | B | _ | B |
@@ -163,7 +161,7 @@ initial board
 
 
 
-====== SECOND MOVE ======
+====== PLAYER2 SECOND MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | B | _ | B | _ | B | _ | B |
@@ -177,7 +175,7 @@ initial board
 
 
 
-====== THIRD MOVE ======
+====== PLAYER1 THIRD MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | B | _ | B | _ | B | _ | B |
@@ -191,7 +189,7 @@ initial board
 
 
 
-====== FOURTH MOVE ======
+====== PLAYER2 FOURTH MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | B | _ | B | _ | B | _ | B |
@@ -205,7 +203,7 @@ initial board
 
 
 
-====== FIFTH MOVE ======
+====== PLAYER1 FIFTH MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | _ | _ | B | _ | B | _ | B |
@@ -219,7 +217,7 @@ initial board
 
 
 
-====== SIXTH MOVE ======
+====== PLAYER2 SIXTH MOVE ======
 
 | B | _ | B | _ | B | _ | B | _ |
 | _ | _ | _ | B | _ | B | _ | B |
@@ -233,7 +231,7 @@ initial board
 
 
 
-====== SEVENTH MOVE ======
+====== PLAYER1 SEVENTH MOVE ======
 
 | B | _ | _ | _ | B | _ | B | _ |
 | _ | B | _ | B | _ | B | _ | B |
@@ -247,7 +245,7 @@ initial board
 
 
 
-====== EIGTH MOVE ======
+====== PLAYER2 EIGTH MOVE ======
 
 | B | _ | ʬ | _ | B | _ | B | _ |
 | _ | _ | _ | B | _ | B | _ | B |
