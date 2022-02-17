@@ -8,13 +8,26 @@ Game works according to the rules other than the following known Issues/TODOs,
 2. King can move over multiple pieces while removing the opposite pieces along the way.
 3. A player can not take multiple opposite pieces. Need a smart contract method to allow multiple move coordinates.
 4. Only way to win is to take all opposite pieces, there are no draws or other ways to win like number of moves or a timer.
-5. No UI. Plan is to work with something like https://github.com/GabrielMioni/react-checkers to have a UI.
-6. No tests!!! :/
+5. No tests!!! :/
 
-## How to run
+## How to Run the UI
+
+The UI code was borrowed with thanks from [this codepen](https://codepen.io/Roverok/pen/XVWLaB). It looks like the following,
+
+![UI](ui.png)
+
+Use the following command to run the UI locally,
+
+```
+npm run serve
+```
+
+After navigating to the UI in the browser, click `Deploy` to deploy the CheckerSnapp smart contract which tracks the state of the game.
+
+## How to Run the Demo
 
 ```sh
-npx tsc && node build/src/index.js
+npm run build  && node dist/demo.js
 ```
 
 Now each move would cause the game state to be printed in the console. Note the following representations of the player pieces,
