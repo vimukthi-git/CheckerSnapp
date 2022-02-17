@@ -13,6 +13,7 @@
     "testw": "jest --watch",
     "coverage": "jest --coverage",
     "start": "node src/server.js & esbuild --watch --splitting --bundle ./src/App.jsx --outdir=./public/js --format=esm --target=esnext --define:process.env.NODE_ENV='\"development\"'",
+    "serve": "npm run build & node src/server.js & esbuild --watch --splitting --bundle ./src/App.jsx --outdir=./public/js --format=esm --target=esnext --define:process.env.NODE_ENV='\"development\"'",
     "build": "tsc && esbuild --minify --splitting --bundle ./src/App.jsx --outdir=./public/js --format=esm --target=esnext --define:process.env.NODE_ENV='\"production\"'",
     "prepare": "husky install",
     "format": "prettier --write --ignore-unknown **/*"
