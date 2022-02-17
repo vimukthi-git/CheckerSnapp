@@ -11,3 +11,7 @@ coverage
 
 .idea
 design.adoc
+
+# Project
+dist
+public/js

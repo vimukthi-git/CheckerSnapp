@@ -5,16 +5,22 @@
   "author": "",
   "license": "Apache-2.0",
   "keywords": [],
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
+  "main": "build/src/demo.js",
+  "types": "build/src/demo.d.ts",
   "type": "module",
   "scripts": {
     "test": "jest",
     "testw": "jest --watch",
     "coverage": "jest --coverage",
-    "build": "tsc -p tsconfig.json",
+    "start": "node src/server.js & esbuild --watch --splitting --bundle ./src/App.jsx --outdir=./public/js --format=esm --target=esnext --define:process.env.NODE_ENV='\"development\"'",
+    "build": "tsc && esbuild --minify --splitting --bundle ./src/App.jsx --outdir=./public/js --format=esm --target=esnext --define:process.env.NODE_ENV='\"production\"'",
     "prepare": "husky install",
     "format": "prettier --write --ignore-unknown **/*"
+  },
+  "dependencies": {
+    "esbuild": "^0.14.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.24",
