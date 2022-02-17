@@ -42,7 +42,7 @@ export class Statistics extends React.Component {
     return (
       <div className="stats">
         <div className="half" style={{ color: '#e26b6b' }}>
-          Red(Player):
+          Red:
           <br />
           {
             (
@@ -69,7 +69,7 @@ export class Statistics extends React.Component {
           Kings
         </div>
         <div className="half">
-          Black(AI):
+          Black:
           <br />
           {
             (
@@ -100,47 +100,52 @@ export class Statistics extends React.Component {
   }
 }
 
-//cell is passed a single item in a row, and renders it out, it also calls it's grand-parent's swapper function on click
-export class Popup extends React.Component {
-  render() {
-    if (this.props.shown) {
-      return (
-        <div className="pop" onClick={this.props.close}>
-          <div className="internal">
-            {this.props.copy}
-            <button onClick={this.props.close} className="close">
-              x
-            </button>
-          </div>
-        </div>
-      );
-    } else {
-      return <div style={{ display: 'none' }}></div>;
-    }
-  }
-}
-
 //game board calls row for each item in the board array
 export default class GameBoard extends React.Component {
-  state = {
-    board: [
-      ['b', '-', 'b', '-', 'b', '-', 'b', '-'],
-      ['-', 'b', '-', 'b', '-', 'b', '-', 'b'],
-      ['b', '-', 'b', '-', 'b', '-', 'b', '-'],
-      ['-', '-', '-', '-', '-', '-', '-', '-'],
-      ['-', '-', '-', '-', '-', '-', '-', '-'],
-      ['-', 'r', '-', 'r', '-', 'r', '-', 'r'],
-      ['r', '-', 'r', '-', 'r', '-', 'r', '-'],
-      ['-', 'r', '-', 'r', '-', 'r', '-', 'r'],
-    ],
-    activePlayer: 'r',
-    aiDepthCutoff: 3,
-    count: 0,
-    popShown: false,
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      snapp: {},
+      board: [
+        ['b', '-', 'b', '-', 'b', '-', 'b', '-'],
+        ['-', 'b', '-', 'b', '-', 'b', '-', 'b'],
+        ['b', '-', 'b', '-', 'b', '-', 'b', '-'],
+        ['-', '-', '-', '-', '-', '-', '-', '-'],
+        ['-', '-', '-', '-', '-', '-', '-', '-'],
+        ['-', 'r', '-', 'r', '-', 'r', '-', 'r'],
+        ['r', '-', 'r', '-', 'r', '-', 'r', '-'],
+        ['-', 'r', '-', 'r', '-', 'r', '-', 'r'],
+      ],
+      activePlayer: 'b',
+      gameDone: false,
+      isDeployed: false,
+    };
+  }
+
+  async updateState() {
+    let snappState = await this.state.snapp.getSnappState();
+    this.setState({
+      board: snappState.board,
+      activePlayer: snappState.nextPlayer ? 'r' : 'b',
+      gameDone: snappState.gameDone,
+    });
+  }
 
   render() {
-    var rowIndex;
+    let deploy = async function () {
+      if (this.state.isDeployed) return;
+      this.setState({ isDeployed: false });
+      let Checkers = await import('../dist/checkers.js');
+      let snapp = await Checkers.deploy();
+      let snappState = await snapp.getSnappState();
+      this.setState({
+        snapp: snapp,
+        board: snappState.board,
+        activePlayer: snappState.nextPlayer ? 'r' : 'b',
+        gameDone: snappState.gameDone,
+        isDeployed: true,
+      });
+    }.bind(this);
     return (
       <div className="container">
         <div className={'board ' + this.state.activePlayer}>
@@ -155,17 +160,17 @@ export default class GameBoard extends React.Component {
           }, this)}
         </div>
         <div className="clear"></div>
+        <Button onClick={deploy} disabled={this.state.isDeployed}>
+          Deploy
+        </Button>
+        <Statistics board={this.state.board} />
       </div>
     );
   }
-
-  aboutPopOpen(e) {
-    this.setState({ popShown: true });
-  }
-  aboutPopClose(e) {
-    this.setState({ popShown: false });
-  }
   handlePieceClick(e) {
+    if (this.state.isDeployed != true) {
+      return;
+    }
     var rowIndex = parseInt(e.target.attributes['data-row'].nodeValue);
     var cellIndex = parseInt(e.target.attributes['data-cell'].nodeValue);
     if (
@@ -183,31 +188,48 @@ export default class GameBoard extends React.Component {
       this.highlightPossibleMoves(rowIndex, cellIndex);
     } else if (this.state.board[rowIndex][cellIndex].indexOf('h') > -1) {
       //this is activated if the piece clicked is a highlighted square, it moves the active piece to that spot.
-      this.state.board = this.executeMove(
+      this.executeMove(
         rowIndex,
         cellIndex,
         this.state.board,
         this.state.activePlayer
       );
       //is the game over? if not, swap active player
-      this.setState(this.state);
       if (this.winDetection(this.state.board, this.state.activePlayer)) {
         console.log(this.state.activePlayer + ' won the game!');
       } else {
-        this.state.activePlayer = this.state.activePlayer == 'r' ? 'b' : 'r';
-        if (this.state.activePlayer == 'b') {
-          setTimeout(
-            function () {
-              this.ai();
-            }.bind(this),
-            50
-          );
+        //this.state.activePlayer = this.state.activePlayer == 'r' ? 'b' : 'r';
+        // if (this.state.activePlayer == 'b') {
+        //     setTimeout(
+        //         function () {
+        //             this.ai();
+        //         }.bind(this),
+        //         50
+        //     );
+        // }
+      }
+    }
+    //this.setState(this.state);
+  }
+  async executeMove(x2, y2, board, activePlayer) {
+    let activePiece;
+    let x1;
+    let y1;
+    for (var i = 0; i < board.length; i++) {
+      //for each row
+      for (var j = 0; j < board[i].length; j++) {
+        if (board[i][j].indexOf('a') > -1) {
+          activePiece = board[i][j];
+          x1 = j;
+          y1 = i;
         }
       }
     }
-    this.setState(this.state);
+    await this.state.snapp.play(activePlayer, x1, y1, x2, y2);
+    this.updateState();
+    return board;
   }
-  executeMove(rowIndex, cellIndex, board, activePlayer) {
+  executeMoveOld(rowIndex, cellIndex, board, activePlayer) {
     var activePiece;
     for (var i = 0; i < board.length; i++) {
       //for each row
@@ -479,210 +501,32 @@ export default class GameBoard extends React.Component {
     for (var i = 0; i < board.length; i++) output.push(board[i].slice(0));
     return output;
   }
-  ai() {
-    //prep a branching future prediction
-    this.count = 0;
-    console.time('decisionTree');
-    var decisionTree = this.aiBranch(
-      this.state.board,
-      this.state.activePlayer,
-      1
-    );
-    console.timeEnd('decisionTree');
-    console.log(this.count);
-    //execute the most favorable move
-    if (decisionTree.length > 0) {
-      console.log(decisionTree[0]);
-      setTimeout(
-        function () {
-          this.handlePieceClick({
-            target: {
-              attributes: {
-                'data-row': {
-                  nodeValue: decisionTree[0].piece.targetRow,
-                },
-                'data-cell': {
-                  nodeValue: decisionTree[0].piece.targetCell,
-                },
-              },
-            },
-          });
+}
 
-          setTimeout(
-            function () {
-              this.handlePieceClick({
-                target: {
-                  attributes: {
-                    'data-row': {
-                      nodeValue: decisionTree[0].move.targetRow,
-                    },
-                    'data-cell': {
-                      nodeValue: decisionTree[0].move.targetCell,
-                    },
-                  },
-                },
-              });
-            }.bind(this),
-            1000
-          );
-        }.bind(this),
-        750
-      );
-    } else {
-      alert('no moves, you win!');
-    }
-  }
-  aiBranch(hypotheticalBoard, activePlayer, depth) {
-    this.count++;
-    var output = [];
-    for (var i = 0; i < hypotheticalBoard.length; i++) {
-      for (var j = 0; j < hypotheticalBoard[i].length; j++) {
-        if (hypotheticalBoard[i][j].indexOf(activePlayer) > -1) {
-          var possibleMoves = this.findAllPossibleMoves(
-            i,
-            j,
-            hypotheticalBoard,
-            activePlayer
-          );
-          for (var k = 0; k < possibleMoves.length; k++) {
-            var tempBoard = this.cloneBoard(hypotheticalBoard);
-            tempBoard[i][j] = 'a' + tempBoard[i][j];
-
-            var buildHighlightTag = 'h ';
-            for (var m = 0; m < possibleMoves[k].wouldDelete.length; m++) {
-              buildHighlightTag +=
-                'd' +
-                String(possibleMoves[k].wouldDelete[m].targetRow) +
-                String(possibleMoves[k].wouldDelete[m].targetCell) +
-                ' ';
-            }
-            tempBoard[possibleMoves[k].targetRow][possibleMoves[k].targetCell] =
-              buildHighlightTag;
-
-            var buildingObject = {
-              piece: { targetRow: i, targetCell: j },
-              move: possibleMoves[k],
-              board: this.executeMove(
-                possibleMoves[k].targetRow,
-                possibleMoves[k].targetCell,
-                tempBoard,
-                activePlayer
-              ),
-              terminal: null,
-              children: [],
-              score: 0,
-              activePlayer: activePlayer,
-              depth: depth,
-            };
-            //does that move win the game?
-            buildingObject.terminal = this.winDetection(
-              buildingObject.board,
-              activePlayer
-            );
-
-            if (buildingObject.terminal) {
-              //console.log('a terminal move was found');
-              //if terminal, score is easy, just depends on who won
-              if (activePlayer == this.state.activePlayer) {
-                buildingObject.score = 100 - depth;
-              } else {
-                buildingObject.score = -100 - depth;
-              }
-            } else if (depth > this.state.aiDepthCutoff) {
-              //don't want to blow up the call stack boiiiiii
-              buildingObject.score = 0;
-            } else {
-              buildingObject.children = this.aiBranch(
-                buildingObject.board,
-                activePlayer == 'r' ? 'b' : 'r',
-                depth + 1
-              );
-              //if not terminal, we want the best score from this route (or worst depending on who won)
-              var scoreHolder = [];
-
-              for (var l = 0; l < buildingObject.children.length; l++) {
-                if (typeof buildingObject.children[l].score !== 'undefined') {
-                  scoreHolder.push(buildingObject.children[l].score);
-                }
-              }
-
-              scoreHolder.sort(function (a, b) {
-                if (a > b) return -1;
-                if (a < b) return 1;
-                return 0;
-              });
-
-              if (scoreHolder.length > 0) {
-                if (activePlayer == this.state.activePlayer) {
-                  buildingObject.score = scoreHolder[scoreHolder.length - 1];
-                } else {
-                  buildingObject.score = scoreHolder[0];
-                }
-              } else {
-                if (activePlayer == this.state.activePlayer) {
-                  buildingObject.score = 100 - depth;
-                } else {
-                  buildingObject.score = -100 - depth;
-                }
-              }
-            }
-            if (activePlayer == this.state.activePlayer) {
-              for (var n = 0; n < buildingObject.move.wouldDelete.length; n++) {
-                if (
-                  hypotheticalBoard[
-                    buildingObject.move.wouldDelete[n].targetRow
-                  ][buildingObject.move.wouldDelete[n].targetCell].indexOf(
-                    'k'
-                  ) > -1
-                ) {
-                  buildingObject.score += 25 - depth;
-                } else {
-                  buildingObject.score += 10 - depth;
-                }
-              }
-              if (
-                (JSON.stringify(hypotheticalBoard).match(/k/g) || []).length <
-                (JSON.stringify(buildingObject.board).match(/k/g) || []).length
-              ) {
-                //new king made after this move
-                buildingObject.score += 15 - depth;
-              }
-            } else {
-              for (var n = 0; n < buildingObject.move.wouldDelete.length; n++) {
-                if (
-                  hypotheticalBoard[
-                    buildingObject.move.wouldDelete[n].targetRow
-                  ][buildingObject.move.wouldDelete[n].targetCell].indexOf(
-                    'k'
-                  ) > -1
-                ) {
-                  buildingObject.score -= 25 - depth;
-                } else {
-                  buildingObject.score -= 10 - depth;
-                }
-              }
-              if (
-                (JSON.stringify(hypotheticalBoard).match(/k/g) || []).length <
-                (JSON.stringify(buildingObject.board).match(/k/g) || []).length
-              ) {
-                //new king made after this move
-                buildingObject.score -= 15 - depth;
-              }
-            }
-            buildingObject.score += buildingObject.move.wouldDelete.length;
-            output.push(buildingObject);
-          }
-        }
-      }
-    }
-
-    output = output.sort(function (a, b) {
-      if (a.score > b.score) return -1;
-      if (a.score < b.score) return 1;
-      return 0;
-    });
-    return output;
-  }
+// some style params
+let grey = '#cccccc';
+let darkGrey = '#999999';
+function Button({ disabled = false, ...props }) {
+  return (
+    <button
+      className="highlight"
+      style={{
+        color: disabled ? darkGrey : 'black',
+        fontSize: '1rem',
+        fontWeight: 'bold',
+        backgroundColor: disabled ? 'white !important' : 'white',
+        borderRadius: '10px',
+        paddingTop: '10px',
+        paddingBottom: '10px',
+        width: '100%',
+        border: disabled ? `4px ${darkGrey} solid` : '4px black solid',
+        boxShadow: `${grey} 3px 3px 3px`,
+        cursor: disabled ? undefined : 'pointer',
+      }}
+      disabled={disabled}
+      {...props}
+    />
+  );
 }
 
 //render the gameboard on the board element

@@ -19,7 +19,7 @@ import {
   Circuit,
   prop,
 } from 'snarkyjs';
-import { Checkers, CheckersBoard } from './checkers.js';
+import { CheckerSnapp, CheckersBoard } from './checkers.js';
 
 export async function main() {
   await isReady;
@@ -35,15 +35,14 @@ export async function main() {
 
   // Create a new instance of the contract
   console.log('\n\n====== DEPLOYING ======\n\n');
-  let snappInstance: Checkers;
+  let snappInstance: CheckerSnapp;
   await Mina.transaction(player1, async () => {
     // player2 sends 1000000000 to the new snapp account
     const amount = UInt64.fromNumber(1000000000);
     const p = await Party.createSigned(player2);
     p.body.delta = Int64.fromUnsigned(amount).neg();
 
-    snappInstance = new Checkers(
-      amount,
+    snappInstance = new CheckerSnapp(
       snappPubkey,
       player1.toPublicKey(),
       player2.toPublicKey()

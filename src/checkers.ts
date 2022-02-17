@@ -20,14 +20,18 @@ import {
   prop,
 } from 'snarkyjs';
 
+export { deploy, play, getSnappState };
+
+await isReady;
+
 function abs(value: Field): Field {
   return Circuit.if(value.lt(Field.zero), value.mul(new Field(-1)), value);
 }
 
 const FIGURE_SIZE = 2;
-const PLAYER_1 = 'W';
+const PLAYER_1 = 'r';
 const PLAYER_1_KING = 'ʬ';
-const PLAYER_2 = 'B';
+const PLAYER_2 = 'b';
 const PLAYER_2_KING = 'β';
 class Piece extends CircuitValue {
   @prop player: Bool;
@@ -57,7 +61,7 @@ class Piece extends CircuitValue {
 }
 
 const BOARD_SIZE = 8;
-export class CheckersBoard {
+class CheckersBoard {
   board: Optional<Piece>[][];
 
   constructor(serializedBoard: Field) {
@@ -345,6 +349,25 @@ export class CheckersBoard {
     console.log('---\n');
   }
 
+  uiState() {
+    let uiState = [];
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      let row = [];
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        let token = '-';
+        if (this.board[i][j].isSome.toBoolean()) {
+          token = this.board[i][j].value.getDisplayToken();
+        }
+        row.push(token);
+      }
+      console.log(row);
+      uiState.push(row);
+    }
+    //console.log(uiState);
+    console.log('---\n');
+    return uiState;
+  }
+
   isWon(): Bool {
     let player1Pieces = new Field(0);
     let player2Pieces = new Field(0);
@@ -371,34 +394,35 @@ export class CheckersBoard {
 /**
  * Checkers Game.
  */
-export class Checkers extends SmartContract {
+class CheckerSnapp extends SmartContract {
   // The board is serialized as a single field element
-  @state(Field) board: State<Field>;
+  @state(Field) board = State<Field>();
   // false -> player 1 | true -> player 2
-  @state(Bool) nextPlayer: State<Bool>;
+  @state(Bool) nextPlayer = State<Bool>();
   // defaults to false, set to true when a player wins
-  @state(Bool) gameDone: State<Bool>;
+  @state(Bool) gameDone = State<Bool>();
 
   // player 1's public key
   player1: PublicKey;
   // player 2's public key
   player2: PublicKey;
 
-  // initialization
-  constructor(
-    initialBalance: UInt64,
-    address: PublicKey,
-    player1: PublicKey,
-    player2: PublicKey
-  ) {
+  constructor(address: PublicKey, player1: PublicKey, player2: PublicKey) {
     super(address);
+    // set the public key of the players
+    this.player1 = player1;
+    this.player2 = player2;
+  }
+
+  // initialization
+  deploy(initialBalance: UInt64, player1: PublicKey, player2: PublicKey) {
+    super.deploy();
     this.balance.addInPlace(initialBalance);
     let initBoard = new CheckersBoard(Field.zero);
     initBoard.init();
-    this.board = State.init(initBoard.serialize());
-    this.nextPlayer = State.init(new Bool(false)); // player 1 starts
-    this.gameDone = State.init(new Bool(false));
-
+    this.board.set(initBoard.serialize());
+    this.nextPlayer.set(new Bool(false)); // player 1 starts
+    this.gameDone.set(new Bool(false));
     // set the public key of the players
     this.player1 = player1;
     this.player2 = player2;
@@ -465,4 +489,94 @@ export class Checkers extends SmartContract {
     const won = board.isWon();
     this.gameDone.set(won);
   }
+}
+
+// setup
+const Local = Mina.LocalBlockchain();
+Mina.setActiveInstance(Local);
+const player1 = Local.testAccounts[0].privateKey;
+const player2 = Local.testAccounts[1].privateKey;
+
+let isDeploying = null as null | {
+  play(
+    player: string,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): Promise<void>;
+  getSnappState(): Promise<{
+    board: string[][];
+    nextPlayer: boolean;
+    gameDone: boolean;
+  }>;
+};
+
+async function deploy() {
+  if (isDeploying) return isDeploying;
+  const snappPrivkey = PrivateKey.random();
+  let snappAddress = snappPrivkey.toPublicKey();
+  let snappInterface = {
+    play(player: string, x1: number, y1: number, x2: number, y2: number) {
+      return play(snappAddress, player, x1, y1, x2, y2);
+    },
+    getSnappState() {
+      return getSnappState(snappAddress);
+    },
+  };
+  isDeploying = snappInterface;
+
+  let snapp = new CheckerSnapp(
+    snappAddress,
+    player1.toPublicKey(),
+    player2.toPublicKey()
+  );
+  let tx = Mina.transaction(player1, async () => {
+    console.log('Deploying CheckerSnapp...');
+    const initialBalance = UInt64.fromNumber(1000000);
+    const p = await Party.createSigned(player2);
+    p.balance.subInPlace(initialBalance);
+    snapp.deploy(initialBalance, player1.toPublicKey(), player2.toPublicKey());
+  });
+  await tx.send().wait();
+
+  isDeploying = null;
+  return snappInterface;
+}
+
+async function play(
+  snappAddress: PublicKey,
+  player: string,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+) {
+  let snapp = new CheckerSnapp(
+    snappAddress,
+    player1.toPublicKey(),
+    player2.toPublicKey()
+  );
+  let playerKey = player == 'b' ? player1 : player2;
+  let tx = Mina.transaction(playerKey, async () => {
+    const X1 = new Field(x1);
+    const Y1 = new Field(y1);
+    const X2 = new Field(x2);
+    const Y2 = new Field(y2);
+    const signature = Signature.create(playerKey, [X1, Y1, X2, Y2]);
+    await snapp.play(playerKey.toPublicKey(), signature, X1, Y1, X2, Y2);
+  });
+  try {
+    await tx.send().wait();
+  } catch (err) {
+    console.log('Move rejected!', err);
+  }
+}
+
+async function getSnappState(snappAddress: PublicKey) {
+  let snappState = (await Mina.getAccount(snappAddress)).snapp.appState;
+  let board = new CheckersBoard(snappState[0]).uiState();
+  let nextPlayer = snappState[1].equals(true).toBoolean();
+  let gameDone = snappState[2].equals(true).toBoolean();
+  return { board: board, nextPlayer: nextPlayer, gameDone: gameDone };
 }
