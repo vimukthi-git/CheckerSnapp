@@ -20,7 +20,7 @@ import {
   prop,
 } from 'snarkyjs';
 
-export { deploy, play, getSnappState };
+export { deploy, play, getSnappState, CheckerSnapp, CheckersBoard };
 
 await isReady;
 
@@ -506,6 +506,7 @@ let isDeploying = null as null | {
     y2: number
   ): Promise<void>;
   getSnappState(): Promise<{
+    serializedBoard: Field;
     board: string[][];
     nextPlayer: boolean;
     gameDone: boolean;
@@ -578,5 +579,10 @@ async function getSnappState(snappAddress: PublicKey) {
   let board = new CheckersBoard(snappState[0]).uiState();
   let nextPlayer = snappState[1].equals(true).toBoolean();
   let gameDone = snappState[2].equals(true).toBoolean();
-  return { board: board, nextPlayer: nextPlayer, gameDone: gameDone };
+  return {
+    serializedBoard: snappState[0],
+    board: board,
+    nextPlayer: nextPlayer,
+    gameDone: gameDone,
+  };
 }
