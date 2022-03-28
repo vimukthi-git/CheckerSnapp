@@ -1,0 +1,8 @@
+runtime: nodejs16
+
+handlers:
+  - url: /static
+    static_dir: gcp/public
+
+  - url: /.*
+    script: auto

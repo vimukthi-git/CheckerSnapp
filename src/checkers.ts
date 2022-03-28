@@ -280,23 +280,23 @@ class CheckersBoard {
         /**
          * This block slows things down a looooot... :(
          */
-        const betweenXCoordinates1 = x
-          .lt(x2)
-          .and(x.gt(x1))
-          .or(x.gt(x2).and(x.lt(x1)));
-        const betweenYCoordinates1 = y
-          .lt(y2)
-          .and(y.gt(y1))
-          .or(y.gt(y2).and(y.lt(y1)));
+        // const betweenXCoordinates1 = x
+        //   .lt(x2)
+        //   .and(x.gt(x1))
+        //   .or(x.gt(x2).and(x.lt(x1)));
+        // const betweenYCoordinates1 = y
+        //   .lt(y2)
+        //   .and(y.gt(y1))
+        //   .or(y.gt(y2).and(y.lt(y1)));
         /**
          * End slow block
          */
         const toRemove = this.board[i][j].isSome
           // opposite player's piece
           .and(this.board[i][j].value.player.equals(player).not())
-          .and(numPiecesRemoved.equals(Field.zero))
-          .and(betweenXCoordinates1)
-          .and(betweenYCoordinates1);
+          .and(numPiecesRemoved.equals(Field.zero));
+        //.and(betweenXCoordinates1)
+        //.and(betweenYCoordinates1)
         numPiecesRemoved = Circuit.if(
           toRemove,
           numPiecesRemoved.add(Field.one),

@@ -10,6 +10,10 @@ Game works according to the rules other than the following known Issues/TODOs,
 4. Only way to win is to take all opposite pieces, there are no draws or other ways to win like number of moves or a timer.
 5. No tests!!! :/
 
+## Play It Online
+
+https://zk-checkers.ew.r.appspot.com/
+
 ## How to Run the UI
 
 The UI code was borrowed with thanks from [this codepen](https://codepen.io/Roverok/pen/XVWLaB). It looks like the following,
